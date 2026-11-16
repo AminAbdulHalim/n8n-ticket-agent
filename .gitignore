@@ -1,4 +1,4 @@
-# .gitignore - was nie ins Repo gehört
+# .gitignore - was nie ins Repo gehoert
 
 # --- Geheimnisse (API-Keys, Zugangsdaten) ---
 .env
