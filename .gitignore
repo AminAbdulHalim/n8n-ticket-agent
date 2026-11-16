@@ -1,0 +1,29 @@
+# .gitignore - was nie ins Repo gehört
+
+# --- Geheimnisse (API-Keys, Zugangsdaten) ---
+.env
+.env.*
+# Vorlage ohne echte Werte darf trotzdem ins Repo
+!.env.example
+
+# --- Logs (koennen Ticket-Daten und Claude-Rohantworten enthalten) ---
+*.log
+logs/
+
+# --- Python-Umgebungen und Zwischenstaende ---
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# --- n8n-Exporte mit Zugangsdaten (falls Workflows exportiert werden) ---
+n8n_data/
+*.credentials.json
+
+# --- Editor und Betriebssystem ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
