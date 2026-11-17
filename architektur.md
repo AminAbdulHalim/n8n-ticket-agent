@@ -12,15 +12,33 @@
 | 6 | Versand an Testadresse | Nur bei `freigegeben`: der freigegebene Text, feste Testadresse (nicht `absender_email`) | Versandbestätigung (`gesendet`, Zeitstempel) | Versand schlägt fehl (z. B. SMTP-Fehler): wird nicht erneut automatisch gesendet, um Doppelversand zu vermeiden; Status `versand_fehlgeschlagen`, Log-Eintrag mit Fehlermeldung, Mensch wird benachrichtigt |
 | 7 | Log-Eintrag (läuft nach jedem Schritt 1 bis 6, auch bei Abbruch) | `ticket_id`, Schrittnummer, Status (`ok`, `abgebrochen`, `manuell_pruefen`, ...), Fehlergrund, Zeitstempel. Nicht ins Log: `absender_email` und `text`. Ausnahme: bei Fehlern in Schritt 3 die Claude-Rohantwort (siehe Abschnitt „Rohantwort im Log“) | Eine Zeile im Log (Datei oder Tabelle) pro Schritt | Schreiben schlägt fehl: Ablauf wird nicht abgebrochen, Fehler wird zusätzlich in der n8n-Ausführungshistorie sichtbar (Error-Workflow) |
 
+## Schritt 5: Freigabe (Entwurf, wird beim Bauen geprüft)
+
+Der Mensch bekommt den Entwurf per E-Mail an die Testadresse (mit `ticket_id`, Original-Ticket, Kategorie, Priorität, Begründung, Entwurf und Frist) und entscheidet über zwei Schaltflächen. Der Workflow wartet an diesem Knoten höchstens 24 Stunden.
+
+| Ereignis | Erkennung im Workflow (Vermutung) | Status | Was passiert danach |
+|---|---|---|---|
+| Freigegeben | Das Antwortfeld des Knotens (vermutlich `approved`) ist genau `true`. | `freigegeben` | Weiter zu Schritt 6 (Versand an die Testadresse), Log-Eintrag. |
+| Abgelehnt | Das Antwortfeld ist genau `false`. | `manuell_pruefen`, Grund `entwurf_abgelehnt` | Nichts wird gesendet. Der Eintrag in der Liste „Manuell prüfen“ genügt, denn der Mensch hat selbst auf „Ablehnen“ geklickt, eine Benachrichtigung wäre überflüssig. Er beantwortet den Absender selbst. Log-Eintrag. |
+| Frist abgelaufen | Das Antwortfeld fehlt, weil der Knoten bei Zeitüberschreitung vermutlich mit seinen Eingangsdaten statt mit einer Antwort fortsetzt. Zur Absicherung (Vermutung): Eine echte Antwort enthält laut Release Notes das Feld `respondedAt`. Fehlt es, gilt das als Ablauf. Das ist einfacher als eine Zeitmessung, die den Versandzeitpunkt festhalten müsste. Nach dem Test bestätigen oder ersetzen. | `manuell_pruefen`, Grund `freigabe_abgelaufen` | Nichts wird gesendet, Benachrichtigung an den Menschen, Log-Eintrag. |
+
+Sicherheitsregel für die Auswertung: Nur ein Antwortfeld mit genau `true` führt zum Versand. Alles andere, auch ein fehlendes oder unerwartetes Feld, wird nicht gesendet. Das entspricht dem Grundsatz „Im Zweifel wird nicht gesendet“.
+
+Beim Bauen zu prüfen (Test mit kurzer Wartezeit):
+1. **Erkennung des Ablaufs:** Woran der Workflow Ablauf von Freigabe und Ablehnung unterscheidet, steht erst nach dem Test fest. Die Vermutung in der Tabelle wird dann angepasst.
+2. **Spätes Klicken:** Was der Link nach dem Ablauf tut, ist ungeklärt. Gefordert ist, dass eine späte Freigabe nichts sendet.
+3. **Ticket-Text in der Mail:** Der Text kommt vom Absender. Die Mail wird als reiner Text versendet oder `<`, `>` und `&` werden vorher ersetzt, damit der Absender keine Formatierung und keine eigenen Links neben die Schaltflächen setzen kann.
+
 ## Status `manuell_pruefen`
 
 - **Wohin:** Das Ticket landet in einer Liste „Manuell prüfen“ (z. B. eine Tabelle oder ein eigener Ordner). Dort steht es mit `ticket_id`, Grund und Zeitpunkt.
-- **Wie der Mensch es erfährt:** Beim Setzen des Status geht sofort eine Benachrichtigung (E-Mail) an die zuständige Person. Fehlt die Benachrichtigung, bliebe der Status ein stiller Fehler.
+- **Wie der Mensch es erfährt:** Beim Setzen des Status geht sofort eine Benachrichtigung (E-Mail) an die zuständige Person. Fehlt die Benachrichtigung, bliebe der Status ein stiller Fehler. Ausnahme ist die Ablehnung in Schritt 5: Dort hat der Mensch gerade selbst auf „Ablehnen“ geklickt, der Eintrag in der Liste genügt.
 - **Wann er gesetzt wird:**
   1. Die Klassifikation fällt aus (Schritt 2).
   2. Die Prüfung fällt zweimal durch (Schritt 3).
-  3. Der Entwurf wird abgelehnt oder die Freigabefrist läuft ohne Antwort ab (Schritt 5).
-  4. Claude vergibt die Kategorie `unklar` (Schritt 3, Grund `kategorie_unklar`).
+  3. Claude vergibt die Kategorie `unklar` (Schritt 3, Grund `kategorie_unklar`).
+  4. Der Mensch lehnt den Entwurf ab (Schritt 5, Grund `entwurf_abgelehnt`).
+  5. Die Freigabefrist läuft ohne Antwort ab (Schritt 5, Grund `freigabe_abgelaufen`).
 - **Entscheidung zu `unklar`:** Das Ticket geht sofort an `manuell_pruefen` und bekommt keinen Entwurf. Das passt zum Versprechen im Prompt („Ein Mensch prüft es dann“) und spart einen Claude-Aufruf. Mögliche spätere Erweiterung (Variante B): `unklar` läuft mit dem Hinweis „unklar“ normal weiter, und der Mensch sieht es in Schritt 5.
 - **Ziel:** Ein Mensch beantwortet den Absender selbst, denn automatisch ist noch nichts rausgegangen.
 
