@@ -71,9 +71,9 @@ Diese Risiken sind in der aktuellen Architektur nicht gelöst. Sie sind bekannt 
 - **Was bleibt offen:** Die Prüfung erkennt eine manipulierte, aber formal gültige Klassifikation nicht (z. B. gefälschte hohe Priorität). Ein Entwurf kann Text aus der Injection enthalten, und der Mensch muss ihn beim Lesen bemerken.
 - **Umgesetzt:**
   1. Die System-Prompts von Schritt 2 und Schritt 4 grenzen das Ticket mit `<ticket>`-Tags ab und verbieten Claude, Anweisungen daraus zu befolgen.
-  2. In Schritt 1 werden Tags der Form `<ticket>` und `</ticket>` in `betreff` und `text` durch `[ticket]` ersetzt (Groß- und Kleinschreibung und Leerzeichen im Tag eingeschlossen). Damit kann ein Absender die Abgrenzung nicht selbst schließen, und der Versuch bleibt im Text sichtbar.
+  2. In Schritt 1 werden Tags der Form `<ticket>` und `</ticket>` in `betreff` und `text` durch `[ticket]` ersetzt (getestet mit Groß- und Kleinschreibung und Leerzeichen im Tag). Das erschwert es einem Absender, die Abgrenzung selbst zu schließen, und der Versuch bleibt im Text sichtbar.
 - **Noch offen:** Dem Menschen in Schritt 5 das Original-Ticket neben dem Entwurf zeigen. Das ist in der Freigabemail vorgesehen, aber noch nicht gebaut.
-- **Nicht gelöst:** Die Abwehr ist nur mit Einzelfällen getestet, und die Antworten von Claude sind nicht deterministisch. Ein bestandener Test belegt also nicht, dass derselbe Angriff beim nächsten Mal wieder scheitert. Die menschliche Freigabe in Schritt 5 bleibt deshalb die eigentliche Sicherung.
+- **Nicht gelöst:** Die Abwehr ist nur mit Einzelfällen getestet, und die Antworten von Claude sind nicht deterministisch. Ein bestandener Test belegt also nicht, dass derselbe Angriff beim nächsten Mal wieder scheitert. Die Tag-Bereinigung deckt außerdem nur die geprüften Schreibweisen ab. Nicht geprüft sind etwa ein `</ticket` ohne schließendes `>` oder Zeichen, die wie ein `<` aussehen. Die menschliche Freigabe in Schritt 5 bleibt deshalb die eigentliche Sicherung.
 
 ### Webhook ohne Authentifizierung
 
