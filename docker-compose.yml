@@ -11,5 +11,16 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n            # Konto und Workflows dauerhaft speichern
 
+  mailpit:
+    image: axllent/mailpit:v1.34.0          # feste Version statt "latest"
+    container_name: mailpit
+    ports:
+      - "127.0.0.1:8025:8025"              # Weboberflaeche, nur vom eigenen Rechner
+      # SMTP-Port 1025 wird nicht veroeffentlicht: n8n erreicht Mailpit im internen
+      # Netz unter mailpit:1025. Nur bei Bedarf fuer Testmails vom Rechner ergaenzen.
+    environment:
+      - MP_SMTP_AUTH_ACCEPT_ANY=1           # jeden Benutzernamen und jedes Passwort annehmen (nur fuer Tests)
+      - MP_SMTP_AUTH_ALLOW_INSECURE=1       # Anmeldung ohne TLS erlauben (nur fuer Tests)
+
 volumes:
   n8n_data:

@@ -391,6 +391,139 @@
       ],
       "id": "2259dceb-32d5-4096-965a-84fae8a19abd",
       "name": "Entwurf übernehmen"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "fromEmail": "test@example.com",
+        "toEmail": "test-agent@example.com",
+        "subject": "={{ $json.ticket_id }}",
+        "message": "={{ (() => {\n  const esc = s => String(s ?? \"\")\n    .replaceAll(\"&\", \"＆\")\n    .replaceAll(\"<\", \"‹\")\n    .replaceAll(\">\", \"›\");\n\n  return [\n    \"Ticket-ID: \" + $json.ticket_id,\n    \"Betreff: \" + esc($('Ticket anlegen').item.json.betreff),\n    \"Text: \" + esc($('Ticket anlegen').item.json.text),\n    \"Kategorie: \" + $json.kategorie,\n    \"Priorität: \" + $json.prioritaet,\n    \"Begründung: \" + esc($('Antwort prüfen').item.json.begruendung),\n    \"Entwurf: \" + esc($json.entwurf_text),\n    \"Frist: bis \" + $now.plus({ hours: 24 }).toFormat(\"dd.MM.yyyy HH:mm\") + \" Uhr\"\n  ].join(\"<br>\");\n})() }}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "resumeUnit": "minutes"
+            }
+          },
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2400,
+        -192
+      ],
+      "id": "76ad1435-9b0a-49d3-95a1-202b238d27da",
+      "name": "Send message and wait for response",
+      "webhookId": "2ad2f0ee-54f3-409b-973a-7ab7fd7a73b9",
+      "credentials": {
+        "smtp": {
+          "id": "gECVLWNhV1cdRWHd",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "0693f07b-895a-4903-8d28-406f972369a0",
+              "leftValue": "={{ $json.data?.approved === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        2624,
+        -192
+      ],
+      "id": "052a905b-45e0-4dc7-911a-0330474e140d",
+      "name": "Freigegeben?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "443500ef-a83d-45e4-b2a6-e9f628264e10",
+              "name": "grund",
+              "value": "={{ $json.data?.approved === false ? 'entwurf_abgelehnt' : 'freigabe_abgelaufen' }}",
+              "type": "string"
+            },
+            {
+              "id": "2fdf028f-5541-47cb-b846-979d3b42eb6c",
+              "name": "=ticket_id",
+              "value": "={{ $('Entwurf übernehmen').first().json.ticket_id }}",
+              "type": "string"
+            },
+            {
+              "id": "737bca48-2075-4a63-af3c-e60c59743235",
+              "name": "status",
+              "value": "manuell_pruefen",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2880,
+        -96
+      ],
+      "id": "e0d6a6b2-8b07-4604-b2c7-45952b908567",
+      "name": "manuell_pruefen setzen (Freigabe)"
+    },
+    {
+      "parameters": {
+        "fromEmail": "test@example.com",
+        "toEmail": "kunde-test@example.com",
+        "subject": "={{ $('Ticket anlegen').item.json.ticket_id }}",
+        "emailFormat": "text",
+        "text": "={{ $('Entwurf übernehmen').item.json.entwurf_text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2848,
+        -288
+      ],
+      "id": "90afbd9b-ca13-45b8-9ff8-f87042600954",
+      "name": "Versand an Ersteller",
+      "webhookId": "42aab1dc-9ba2-4dc3-b203-0f1e072ded13",
+      "credentials": {
+        "smtp": {
+          "id": "gECVLWNhV1cdRWHd",
+          "name": "SMTP account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -514,6 +647,46 @@
           }
         ]
       ]
+    },
+    "Entwurf übernehmen": {
+      "main": [
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response": {
+      "main": [
+        [
+          {
+            "node": "Freigegeben?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Freigegeben?": {
+      "main": [
+        [
+          {
+            "node": "Versand an Ersteller",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "manuell_pruefen setzen (Freigabe)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -522,8 +695,9 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "84b7299b-1a50-4583-bc7d-a90dd322083f",
+  "versionId": "b8b1123e-2a15-4cc7-ac5e-637d5be1a1ce",
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "22fde727fbb4b06283d7d6671c160c6ac49d8fde722fe0657427b14df41185b6"
   },
   "nodeGroups": [],
