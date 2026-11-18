@@ -193,11 +193,12 @@
           "id": "BCOVHRBLQ6ijQjP4",
           "name": "anthropic-key"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Erlaubte Werte, müssen zum System-Prompt passen\nconst KATEGORIEN = [\"Zugang\", \"Hardware\", \"Netzwerk\", \"Sonstiges\", \"unklar\"];\nconst PRIORITAETEN = [\"hoch\", \"normal\"];\nconst PFLICHT = [\"kategorie\", \"prioritaet\", \"begruendung\"];\n\n// Ersten Text-Block suchen. Ein Denkblock oder anderer Block kann davor stehen,\n// deshalb nicht blind content[0] nehmen. Fehlt content oder der Text-Block,\n// wird roh zum leeren Text und fällt in Stufe 1 durch.\nconst blocks = $input.first().json.content ?? [];\nconst textBlock = blocks.find(b => b.type === \"text\");\nconst roh = textBlock ? textBlock.text : \"\";\nconst ticket = $('Ticket anlegen').first().json;\n\n// Stufe 1: ist es gültiges JSON?\nlet daten;\ntry {\n  daten = JSON.parse(roh);\n} catch (e) {\n  return [{ json: { ok: false, stufe: 1, grund: \"kein gueltiges JSON\", roh } }];\n}\n\n// Stufe 2: Pflichtfelder vorhanden?\n// Zuerst: Ist das Ergebnis überhaupt ein Objekt? JSON.parse(\"5\") oder\n// JSON.parse(\"null\") sind gültiges JSON, aber kein Objekt mit Feldern.\nif (typeof daten !== \"object\" || daten === null || Array.isArray(daten)) {\n  return [{ json: { ok: false, stufe: 2, grund: \"JSON ist kein Objekt\", roh } }];\n}\nconst fehlend = PFLICHT.filter(k => !(k in daten));\nif (fehlend.length > 0) {\n  return [{ json: { ok: false, stufe: 2, grund: \"Pflichtfeld fehlt: \" + fehlend.join(\", \"), roh } }];\n}\n\n// Stufe 3: Werte erlaubt?\nif (!KATEGORIEN.includes(daten.kategorie)) {\n  return [{ json: { ok: false, stufe: 3, grund: \"kategorie nicht erlaubt\", roh } }];\n}\nif (!PRIORITAETEN.includes(daten.prioritaet)) {\n  return [{ json: { ok: false, stufe: 3, grund: \"prioritaet nicht erlaubt\", roh } }];\n}\nif (typeof daten.begruendung !== \"string\" || daten.begruendung.trim() === \"\") {\n  return [{ json: { ok: false, stufe: 3, grund: \"begruendung ist kein nicht-leerer Text\", roh } }];\n}\n\nreturn [{ json: {\n  ok: true,\n  ticket_id: ticket.ticket_id,\n  kategorie: daten.kategorie,\n  prioritaet: daten.prioritaet,\n  begruendung: daten.begruendung\n} }];\n"
+        "jsCode": "// Erlaubte Werte, müssen zum System-Prompt passen\nconst KATEGORIEN = [\"Zugang\", \"Hardware\", \"Netzwerk\", \"Sonstiges\", \"unklar\"];\nconst PRIORITAETEN = [\"hoch\", \"normal\"];\nconst PFLICHT = [\"kategorie\", \"prioritaet\", \"begruendung\"];\n\n// Stufe 0: Hat die API den Aufruf abgelehnt (z. B. falsches Modell, 404 not_found_error)?\n// Wir nehmen nur ausgewählte, ungefährliche Felder, nie das ganze Objekt, damit keine\n// Anfrage-Kopfzeilen (und damit kein API-Schlüssel) im Log landen können.\nconst antwort = $input.first().json;\nif (antwort.type === \"error\" || antwort.error !== undefined) {\n  const fehler = antwort.error;\n  const istObjekt = fehler !== null && typeof fehler === \"object\";\n\n  // Der saubere Fehler der API steht unter details.body.error (am Eintrag selbst, getestet).\n  // Der Rückfall über fehler.details schadet nicht und bleibt als Absicherung.\n  const details = antwort.details ?? (istObjekt ? fehler.details : undefined);\n  const apiFehler = details?.body?.error;\n\n  const typ = String(\n    apiFehler?.type ?? (istObjekt && fehler.type ? fehler.type : \"unbekannt\")\n  );\n  const meldung = String(\n    apiFehler?.message ?? (istObjekt && fehler.message ? fehler.message\n      : (typeof fehler === \"string\" ? fehler : \"keine Meldung\"))\n  );\n  const status = istObjekt ? (fehler.status ?? fehler.httpCode) : undefined;\n\n  return [{ json: {\n    ok: false,\n    stufe: 0,\n    grund: \"API hat den Aufruf abgelehnt (\" + typ + (status ? \", Status \" + status : \"\") + \")\",\n    roh: JSON.stringify({ typ, status, meldung: meldung.slice(0, 300), request_id: details?.body?.request_id })\n  } }];\n}\n\n// Ersten Text-Block suchen. Ein Denkblock oder anderer Block kann davor stehen,\n// deshalb nicht blind content[0] nehmen. Fehlt content oder der Text-Block,\n// wird roh zum leeren Text und fällt in Stufe 1 durch.\nconst blocks = $input.first().json.content ?? [];\nconst textBlock = blocks.find(b => b.type === \"text\");\nconst roh = textBlock ? textBlock.text : \"\";\nconst ticket = $('Ticket anlegen').first().json;\n\n// Stufe 1: ist es gültiges JSON?\nlet daten;\ntry {\n  daten = JSON.parse(roh);\n} catch (e) {\n  return [{ json: { ok: false, stufe: 1, grund: \"kein gueltiges JSON\", roh } }];\n}\n\n// Stufe 2: Pflichtfelder vorhanden?\n// Zuerst: Ist das Ergebnis überhaupt ein Objekt? JSON.parse(\"5\") oder\n// JSON.parse(\"null\") sind gültiges JSON, aber kein Objekt mit Feldern.\nif (typeof daten !== \"object\" || daten === null || Array.isArray(daten)) {\n  return [{ json: { ok: false, stufe: 2, grund: \"JSON ist kein Objekt\", roh } }];\n}\nconst fehlend = PFLICHT.filter(k => !(k in daten));\nif (fehlend.length > 0) {\n  return [{ json: { ok: false, stufe: 2, grund: \"Pflichtfeld fehlt: \" + fehlend.join(\", \"), roh } }];\n}\n\n// Stufe 3: Werte erlaubt?\nif (!KATEGORIEN.includes(daten.kategorie)) {\n  return [{ json: { ok: false, stufe: 3, grund: \"kategorie nicht erlaubt\", roh } }];\n}\nif (!PRIORITAETEN.includes(daten.prioritaet)) {\n  return [{ json: { ok: false, stufe: 3, grund: \"prioritaet nicht erlaubt\", roh } }];\n}\nif (typeof daten.begruendung !== \"string\" || daten.begruendung.trim() === \"\") {\n  return [{ json: { ok: false, stufe: 3, grund: \"begruendung ist kein nicht-leerer Text\", roh } }];\n}\n\nreturn [{ json: {\n  ok: true,\n  ticket_id: ticket.ticket_id,\n  kategorie: daten.kategorie,\n  prioritaet: daten.prioritaet,\n  begruendung: daten.begruendung\n} }];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -349,7 +350,8 @@
           "id": "BCOVHRBLQ6ijQjP4",
           "name": "anthropic-key"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -475,7 +477,7 @@
             },
             {
               "id": "2fdf028f-5541-47cb-b846-979d3b42eb6c",
-              "name": "=ticket_id",
+              "name": "ticket_id",
               "value": "={{ $('Entwurf übernehmen').first().json.ticket_id }}",
               "type": "string"
             },
@@ -557,7 +559,7 @@
         -192
       ],
       "id": "a2aab340-1bec-4e73-8e73-75548669dc24",
-      "name": "If"
+      "name": "Entwurf brauchbar?"
     },
     {
       "parameters": {
@@ -592,7 +594,7 @@
         -16
       ],
       "id": "f8b92127-f4b5-40df-b3ba-3bb8b16626db",
-      "name": "manuell_pruefen setzen (Freigabe)1"
+      "name": "manuell_pruefen setzen (Entwurf)"
     }
   ],
   "pinData": {},
@@ -710,7 +712,7 @@
       "main": [
         [
           {
-            "node": "If",
+            "node": "Entwurf brauchbar?",
             "type": "main",
             "index": 0
           }
@@ -757,7 +759,7 @@
         ]
       ]
     },
-    "If": {
+    "Entwurf brauchbar?": {
       "main": [
         [
           {
@@ -768,7 +770,7 @@
         ],
         [
           {
-            "node": "manuell_pruefen setzen (Freigabe)1",
+            "node": "manuell_pruefen setzen (Entwurf)",
             "type": "main",
             "index": 0
           }
@@ -782,7 +784,7 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "b64b02f1-5329-4999-b914-d4e87eecb45d",
+  "versionId": "255b0a2f-6a9c-4bdf-92bd-7e7911a019e6",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "22fde727fbb4b06283d7d6671c160c6ac49d8fde722fe0657427b14df41185b6"
