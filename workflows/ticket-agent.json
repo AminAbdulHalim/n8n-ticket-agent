@@ -689,11 +689,74 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.5,
       "position": [
-        3568,
-        -112
+        3488,
+        -96
       ],
       "id": "f2c6e04c-f7a7-415e-a060-fd8e03a294cb",
       "name": "manuell_pruefen setzen (Versand)"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "s1IBZIQF1ce2Mbbe",
+          "mode": "list",
+          "cachedResultName": "ticket_log",
+          "cachedResultUrl": "/projects/htDaXXOzxoonzMMj/datatables/s1IBZIQF1ce2Mbbe"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_id": "={{ $json.ticket_id }}",
+            "status": "={{ $json.status }}",
+            "grund": "={{ $json.grund ?? '' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "grund",
+              "displayName": "grund",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        3824,
+        48
+      ],
+      "id": "6535ffd7-0093-43cf-9932-aafeb1c1929e",
+      "name": "Log schreiben"
     }
   ],
   "pinData": {},
@@ -904,6 +967,61 @@
           }
         ]
       ]
+    },
+    "gesendet setzen": {
+      "main": [
+        [
+          {
+            "node": "Log schreiben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "manuell_pruefen setzen": {
+      "main": [
+        [
+          {
+            "node": "Log schreiben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "manuell_pruefen setzen (Entwurf)": {
+      "main": [
+        [
+          {
+            "node": "Log schreiben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "manuell_pruefen setzen (Freigabe)": {
+      "main": [
+        [
+          {
+            "node": "Log schreiben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "manuell_pruefen setzen (Versand)": {
+      "main": [
+        [
+          {
+            "node": "Log schreiben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -912,7 +1030,7 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "731e038f-23ab-4e7f-a16c-a6dd5c856b94",
+  "versionId": "5d09dcc6-0486-4d10-a3b6-d9f7fb197541",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "22fde727fbb4b06283d7d6671c160c6ac49d8fde722fe0657427b14df41185b6"
