@@ -5,6 +5,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "ticket",
+        "authentication": "headerAuth",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -16,7 +17,13 @@
       ],
       "id": "d6279e5b-a531-43c4-aaec-cd4932cb0ee6",
       "name": "Webhook",
-      "webhookId": "97a294cd-f3f1-4b36-ab09-a4baa1ea25d2"
+      "webhookId": "97a294cd-f3f1-4b36-ab09-a4baa1ea25d2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ZSYoll7qlSDsHygy",
+          "name": "ticket-webhook-token"
+        }
+      }
     },
     {
       "parameters": {
@@ -1031,7 +1038,7 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "3bf61b94-d862-48a9-b101-8e2807facc54",
+  "versionId": "360fd086-8afc-4d1f-9930-8088bc0e9975",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "22fde727fbb4b06283d7d6671c160c6ac49d8fde722fe0657427b14df41185b6"
