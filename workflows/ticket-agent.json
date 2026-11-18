@@ -409,7 +409,7 @@
         "options": {
           "limitWaitTime": {
             "values": {
-              "resumeUnit": "minutes"
+              "resumeAmount": 24
             }
           },
           "appendAttribution": false
@@ -525,7 +525,8 @@
           "id": "gECVLWNhV1cdRWHd",
           "name": "SMTP account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -595,6 +596,104 @@
       ],
       "id": "f8b92127-f4b5-40df-b3ba-3bb8b16626db",
       "name": "manuell_pruefen setzen (Entwurf)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "1bed53dc-2589-4b01-b248-91cca5d0c870",
+              "leftValue": "={{ Array.isArray($json.accepted)    && $json.accepted.length > 0    && $json.error === undefined }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        3296,
+        -288
+      ],
+      "id": "9a359c9c-8264-43d9-9f75-bd852e911258",
+      "name": "Versand ok?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "737bca48-2075-4a63-af3c-e60c59743235",
+              "name": "status",
+              "value": "gesendet",
+              "type": "string"
+            },
+            {
+              "id": "6abf6d5a-2246-4de2-b1ef-3806aa068e44",
+              "name": "ticket_id",
+              "value": "={{ $('Ticket anlegen').first().json.ticket_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        3568,
+        -304
+      ],
+      "id": "d86c0484-b178-4ba7-82a4-03403383dbc8",
+      "name": "gesendet setzen"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ccb4e592-0ba5-4644-b8ee-4a411b74a83a",
+              "name": "grund",
+              "value": "versand_unklar",
+              "type": "string"
+            },
+            {
+              "id": "54fdc9ef-7c22-45ed-9db0-f23936036cef",
+              "name": "ticket_id",
+              "value": "={{ $('Ticket anlegen').first().json.ticket_id }}",
+              "type": "string"
+            },
+            {
+              "id": "36938df8-7298-4bef-ad5e-4bb80ed395a6",
+              "name": "status",
+              "value": "manuell_pruefen",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        3568,
+        -112
+      ],
+      "id": "f2c6e04c-f7a7-415e-a060-fd8e03a294cb",
+      "name": "manuell_pruefen setzen (Versand)"
     }
   ],
   "pinData": {},
@@ -776,6 +875,35 @@
           }
         ]
       ]
+    },
+    "Versand an Ersteller": {
+      "main": [
+        [
+          {
+            "node": "Versand ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Versand ok?": {
+      "main": [
+        [
+          {
+            "node": "gesendet setzen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "manuell_pruefen setzen (Versand)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -784,7 +912,7 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "255b0a2f-6a9c-4bdf-92bd-7e7911a019e6",
+  "versionId": "731e038f-23ab-4e7f-a16c-a6dd5c856b94",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "22fde727fbb4b06283d7d6671c160c6ac49d8fde722fe0657427b14df41185b6"
