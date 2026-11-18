@@ -429,7 +429,8 @@
           "id": "gECVLWNhV1cdRWHd",
           "name": "SMTP account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -472,7 +473,7 @@
             {
               "id": "443500ef-a83d-45e4-b2a6-e9f628264e10",
               "name": "grund",
-              "value": "={{ $json.data?.approved === false ? 'entwurf_abgelehnt' : 'freigabe_abgelaufen' }}",
+              "value": "={{ $json.error !== undefined ? 'freigabemail_unklar'\n   : $json.data?.approved === false ? 'entwurf_abgelehnt'\n   : 'freigabe_abgelaufen' }}",
               "type": "string"
             },
             {
@@ -1030,7 +1031,7 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "5d09dcc6-0486-4d10-a3b6-d9f7fb197541",
+  "versionId": "3bf61b94-d862-48a9-b101-8e2807facc54",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "22fde727fbb4b06283d7d6671c160c6ac49d8fde722fe0657427b14df41185b6"
