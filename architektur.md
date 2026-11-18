@@ -21,13 +21,15 @@ Der Mensch bekommt den Entwurf per E-Mail an die Testadresse (mit `ticket_id`, O
 | Freigegeben | Das Feld `data.approved` der Antwort ist genau `true`. | Kein eigener Status: `freigegeben` wird nirgends gesetzt. Erst nach angenommenem Versand entsteht der Status `gesendet` (Schritt 6). | Weiter zu Schritt 6 (Versand an die Testadresse). Der Log-Eintrag entsteht erst dort, bei `gesendet` oder bei einem Versandfehler. |
 | Abgelehnt | Das Feld `data.approved` ist genau `false`. | `manuell_pruefen`, Grund `entwurf_abgelehnt` | Nichts wird gesendet. Eine eigene Liste „Manuell prüfen“ gibt es nicht: Das Ticket steht als Zeile in `ticket_log` mit Status `manuell_pruefen` und diesem Grund, dort muss der Mensch nachsehen. Eine Benachrichtigung ist hier nicht vorgesehen, denn der Mensch hat selbst auf „Ablehnen“ geklickt. Er beantwortet den Absender selbst. |
 | Frist abgelaufen | Das Feld `data` fehlt ganz. Bei Zeitüberschreitung setzt der Knoten mit seinen Eingangsdaten (Entwurf, `ticket_id` und so weiter) fort, statt mit einer Antwort. Der Ausdruck `$json.data?.approved` scheitert dabei nicht, sondern liefert `undefined`. | `manuell_pruefen`, Grund `freigabe_abgelaufen` | Nichts wird gesendet. Das Ticket steht als Zeile in `ticket_log` mit diesem Status und Grund. Eine Benachrichtigung an den Menschen ist geplant, aber nicht gebaut (siehe „Geplant, nicht gebaut“). |
+| Fehler beim Versand der Freigabemail | Der Eintrag hat das Feld `error` (hier ein Text), das es beim Ablauf nicht gibt. Der Freigabe-Knoten gibt Fehler dafür weiter („On Error: Continue“), und der Ausdruck für den Grund prüft `error` zuerst. | `manuell_pruefen`, Grund `freigabemail_unklar` | Nichts wird gesendet: Der Eintrag läuft über „Freigegeben?“ (dort ist `approved` nicht `true`) in den Zweig `manuell_pruefen`. Das Ticket steht als Zeile in `ticket_log`. Der Grund heißt „unklar“ und nicht „fehlgeschlagen“, weil offen ist, ob die Mail doch rausging. Ist sie angekommen, hält der Mensch einen Link, der vermutlich nichts mehr bewirkt, denn der Ablauf wartet nicht mehr darauf (nicht getestet). Eine Benachrichtigung ist geplant, aber nicht gebaut. |
 
 Sicherheitsregel für die Auswertung: Nur ein Antwortfeld mit genau `true` führt zum Versand. Alles andere, auch ein fehlendes oder unerwartetes Feld, wird nicht gesendet. Das entspricht dem Grundsatz „Im Zweifel wird nicht gesendet“.
 
-Beim Bauen geprüft (Test mit kurzer Wartezeit):
+Beim Bauen geprüft:
 1. **Erkennung des Ablaufs:** Freigabe und Ablehnung tragen `data.approved` (`true` oder `false`). Beim Ablauf fehlt `data` ganz. Daran trennt der Workflow die drei Fälle (erst „Freigegeben?“, dann „Abgelehnt?“).
 2. **Spätes Klicken:** Klickt jemand nach dem Ablauf auf den Link, erscheint „No action required“ und nichts passiert. Eine späte Freigabe sendet also nichts.
 3. **Ticket-Text in der Mail:** Der Text kommt vom Absender. Betreff, Text, Begründung und Entwurf werden vor dem Einfügen entschärft: `<`, `>` und `&` werden durch ähnlich aussehende Zeichen (`‹`, `›`, `＆`) ersetzt. Eine Ersetzung durch Entities genügt nicht, denn der Knoten entschlüsselt eine Ebene davon wieder, und aus `&lt;b&gt;` würde ein echtes `<b>`. So kann der Absender keine Formatierung und keine eigenen Links neben die Schaltflächen setzen.
+4. **Fehler beim Versand der Freigabemail:** Getestet mit gestopptem Mailserver (Mailpit). Das Ticket bekommt den Grund `freigabemail_unklar`. Der erste Test zeigte noch den falschen Grund `freigabe_abgelaufen`, weil der Ausdruck damals noch nicht geändert war und `error` nicht unterschied.
 
 ## Status `manuell_pruefen`
 
@@ -41,6 +43,7 @@ Beim Bauen geprüft (Test mit kurzer Wartezeit):
   5. Der Mensch lehnt den Entwurf ab (Schritt 5, Grund `entwurf_abgelehnt`).
   6. Die Freigabefrist läuft ohne Antwort ab (Schritt 5, Grund `freigabe_abgelaufen`).
   7. Der Versand wird nicht als angenommen bestätigt (Schritt 6, Grund `versand_unklar`).
+  8. Der Versand der Freigabemail scheitert (Schritt 5, Grund `freigabemail_unklar`).
 - **Entscheidung zu `unklar`:** Das Ticket geht sofort an `manuell_pruefen` und bekommt keinen Entwurf. Das passt zum Versprechen im Prompt („Ein Mensch prüft es dann“) und spart einen Claude-Aufruf. Mögliche spätere Erweiterung (Variante B): `unklar` läuft mit dem Hinweis „unklar“ normal weiter, und der Mensch sieht es in Schritt 5.
 - **Ziel:** Ein Mensch beantwortet den Absender selbst, denn automatisch ist noch nichts rausgegangen. Ausnahme ist `versand_unklar`: Dort ist offen, ob die Mail doch angekommen ist, der Mensch prüft das, bevor er etwas schickt.
 
@@ -56,6 +59,15 @@ Der Mensch steht in Schritt 5, direkt nach dem Entwurf und vor dem Versand in Sc
 - **Deshalb gilt die Reihenfolge 5 vor 6.** Würde der Mensch erst nach dem Versand prüfen, könnte er nur noch feststellen, dass etwas schiefgelaufen ist.
 - **Die Prüfung in Schritt 3 ersetzt den Menschen nicht.** Sie fängt nur formale Fehler ab (kein JSON, fehlende Felder, ungültige Werte). Ob Ton und Inhalt des Entwurfs passen, kann nur der Mensch beurteilen.
 - **Im Zweifel wird nicht gesendet.** Bei Ablehnung, Zeitüberschreitung oder Fehler vor Schritt 6 passiert nichts nach außen.
+
+## Entscheidung: Wann antwortet der Webhook?
+
+Der Webhook antwortet früh: gleich nach dem Anlegen des Tickets und bevor Claude aufgerufen wird.
+
+- **Was gebaut ist:** Der Webhook arbeitet im Modus „Respond to Webhook“. Der Knoten „Antwort 200“ sitzt zwischen „Ticket anlegen“ und „Claude klassifizieren“ und antwortet mit `{ "status": "angenommen", "ticket_id": "…" }`. Die Antwort bestätigt nur zwei Dinge: Die Pflichtfelder waren da (sonst käme „Antwort 400“), und das Ticket hat eine `ticket_id` bekommen. Über die Klassifikation, den Entwurf, die Freigabe oder den Versand sagt sie nichts.
+- **Warum so:** Schritt 5 wartet bis zu 24 Stunden auf einen Menschen, und eine HTTP-Anfrage kann nicht so lange offen bleiben, denn das Formular oder ein Zwischenschritt bricht sie viel früher mit einem Timeout ab. Außerdem ist das Ergebnis eine interne Entscheidung: Die Rückmeldung an den Absender ist später die Mail, nicht die HTTP-Antwort. Das ist eine Begründung aus der Planung, getestet wurde nur die Folge unten.
+- **Folge:** Der Absender erfährt von einem Fehler nach der Antwort nie etwas. Belegt ist das durch den Test mit falschem Modell: PowerShell zeigte `angenommen` mit einer `ticket_id`, obwohl der Claude-Knoten danach mit 404 `not_found_error` scheiterte. Ohne Fehlerausgang wäre danach nichts passiert: kein Status, keine Freigabemail, keine Benachrichtigung, nur ein roter Eintrag in der Ausführungsliste von n8n. „Angenommen“ heißt also nicht „wird bearbeitet“.
+- **Was dagegen hilft:** Fehler werden an den vier Knoten mit Fehlerausgang („Claude klassifizieren“, „Claude Entwurf“, „Send message and wait for response“ für die Freigabemail und „Versand an Ersteller“) weitergegeben und enden als Zeile in `ticket_log` mit Status `manuell_pruefen` und Grund. Das ist der Ersatz für eine Rückmeldung an den Absender, er ist aber nur ein Eintrag und keine Nachricht. Noch fehlt, dass ihn jemand sieht: Es gibt keine Benachrichtigung und keine eigene Liste (siehe „Geplant, nicht gebaut“). Ebenfalls fehlt eine Rückmeldung an den Absender selbst. Fehler an Knoten ohne Fehlerausgang stoppen den Ablauf weiterhin ohne Eintrag.
 
 ## Grenzen
 
