@@ -70,6 +70,20 @@ Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:5678/webhook-test/ticket" 
 - Beide URLs sind geprüft: 403 ohne und mit falschem Token, ein gültiges Token läuft über die Production URL bis zum Versand
 - Die Production URL gilt nur, wenn der Workflow veröffentlicht ist (Schalter „Publish“), und braucht kein „Listen for test event“. Der Pfad ist dort `/webhook/ticket` statt `/webhook-test/ticket`
 
+## Demo-Ablauf
+
+Ablauf für eine kurze Vorführung. Die Zeiten sind nicht gemessen, deshalb stehen hier keine. Belege stehen in `tests.md`.
+
+| Nr. | Station | Was gezeigt wird | Beleg |
+|---|---|---|---|
+| 1 | Was es ist | Prototyp, nur feste Testadresse, Mailpit fängt alle Mails ab, kein Produktivsystem | README |
+| 2 | Ticket senden | PowerShell-Anfrage mit Token, Antwort 200 `angenommen` mit `ticket_id` | `tests.md` Nr. 1 |
+| 3 | Workflow | Klassifikation, Prüfung und Entwurf im Editor | Workflow-Export |
+| 4 | Mensch entscheidet | Freigabemail in Mailpit, „Approve“ klicken | `tests.md` Nr. 1 |
+| 5 | Versand und Log | Versandmail an die Testadresse, Log-Zeile `gesendet` in `ticket_log` | `tests.md` Nr. 1 |
+| 6 | Ablehnen | „Decline“: Status `entwurf_abgelehnt` (ob dabei eine Mail rausging, ist in Nr. 10 nicht festgehalten) | `tests.md` Nr. 10 |
+| 7 | Grenzen | Keine Benachrichtigung bei `manuell_pruefen`, der Freigabelink ist die Berechtigung, Prompt Injection nur abgemildert | `architektur.md` |
+
 ## Grenzen
 
 - Der Webhook ist nur durch ein gemeinsames Token geschützt, ohne Mengenbegrenzung
