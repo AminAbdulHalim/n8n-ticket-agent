@@ -1,7 +1,7 @@
 # docker-compose.yml - n8n lokal fuer Projekt 1
 services:
   n8n:
-    image: docker.n8n.io/n8nio/n8n:2.46.6   # feste Version statt "latest", wie in requirements.txt
+    image: docker.n8n.io/n8nio/n8n:2.46.6   # feste Version statt "latest"
     container_name: n8n
     ports:
       - "127.0.0.1:5678:5678"              # nur vom eigenen Rechner erreichbar
