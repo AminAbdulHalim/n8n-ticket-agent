@@ -38,7 +38,7 @@
 - Workflow importieren: `workflows/ticket-agent.json`
 - Credentials werden nicht mitexportiert, drei selbst anlegen und in den Knoten neu wählen:
   - Anthropic: Header Auth, Name `x-api-key`, Wert ist der eigene API-Key (für „Claude klassifizieren“ und „Claude Entwurf“)
-  - SMTP für Mailpit: Host `mailpit`, Port `1025`
+  - SMTP für Mailpit: Host `mailpit`, Port `1025`. Die Credential enthält bei mir einen Benutzernamen (Mailpit zeigte `amin`). Ob Mailpit beliebige Werte akzeptiert, ist nicht geprüft, das klärt der Nachbau-Test
   - Webhook-Token: Header Auth mit Name `X-Ticket-Token`, Credential-Name `ticket-webhook-token`, Wert ist das Token aus dem Abschnitt „Test“
 - Data table `ticket_log` anlegen, Spalten `ticket_id`, `status`, `grund` (Text), im Knoten „Log schreiben“ neu wählen
 - Der Zeitstempel der Tabelle ist im Node-Output UTC, die Oberfläche zeigt lokale Zeit
@@ -65,7 +65,8 @@ Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:5678/webhook-test/ticket" 
 
 - Erwartet: 200 mit `{ "status": "angenommen", "ticket_id": … }` (PowerShell zeigt es als Tabelle mit den Spalten `status` und `ticket_id`), 400 bei leerem Feld, 403 ohne oder mit falschem Token (PowerShell meldet dann einen Fehler)
 - Danach Freigabemail in Mailpit öffnen und auf „Approve“ oder „Decline“ klicken
-- Nur die Test URL ist geprüft, die Production URL nicht
+- Beide URLs sind geprüft: 403 ohne und mit falschem Token, ein gültiges Token läuft über die Production URL bis zum Versand
+- Die Production URL gilt nur, wenn der Workflow veröffentlicht ist (Schalter „Publish“), und braucht kein „Listen for test event“. Der Pfad ist dort `/webhook/ticket` statt `/webhook-test/ticket`
 
 ## Grenzen
 
