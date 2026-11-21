@@ -98,3 +98,7 @@ Ablauf für eine kurze Vorführung. Die Zeiten sind nicht gemessen, deshalb steh
 - Nach Hinweisen, gemeinsam mit Claude erarbeitet: Prüf-Code (Stufe 0 bis 3), n8n-Ausdrücke, Entwurfs-Prompt, `architektur.md`, `README.md`
 - Selbst: Aufbau in n8n (Knoten, Credentials, Verbindungen), Läufe und Testergebnisse, Klassifikations-Prompt (Kategorien, Prioritätsregeln, VPN-Regel), Commit-Nachrichten
 - Nur gegengeprüft: der Workflow-Export (Verbindungen, Felder, Geheimnisse), nicht das Laufzeitverhalten. Die KI hat n8n selbst nie gesehen, nur Dateien, Ausgaben und Screenshots
+
+## Lizenz
+
+MIT, siehe `LICENSE`. Das gilt nur für den Inhalt dieses Repos. n8n, Mailpit und Claude haben eigene Lizenzen und Nutzungsbedingungen.
